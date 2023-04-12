@@ -5,13 +5,10 @@ import { Stack, StackProps, RemovalPolicy, aws_s3 as s3, aws_s3_deployment as s3
 import { Construct } from 'constructs';
 import { MyCustomResource } from './my-custom-resource';
 import { createHash } from 'crypto';
-
-// Region to Origin Shield mapping based on latency. to be updated when new Regional Edge Caches are added to CloudFront.
-const ORIGIN_SHIELD_MAPPING = new Map([['af-south-1', 'eu-west-2'], [ 'ap-east-1' ,'ap-northeast-2'], [ 'ap-northeast-1', 'ap-northeast-1'], [
-  'ap-northeast-2', 'ap-northeast-2'], [ 'ap-northeast-3', 'ap-northeast-1'], [ 'ap-south-1', 'ap-south-1'], [ 'ap-southeast-1','ap-southeast-1'], [ 
-  'ap-southeast-2', 'ap-southeast-2'], [ 'ca-central-1', 'us-east-1'], [ 'eu-central-1', 'eu-central-1'], [ 'eu-north-1','eu-central-1'], [
-  'eu-south-1','eu-central-1'], [ 'eu-west-1', 'eu-west-1'], [ 'eu-west-2', 'eu-west-2'], [ 'eu-west-3', 'eu-west-2'], [ 'me-south-1', 'ap-south-1'], [
-  'sa-east-1', 'sa-east-1'], [ 'us-east-1', 'us-east-1'], [ 'us-east-2','us-east-2'], [ 'us-west-1', 'us-west-1'], [ 'us-west-2', 'us-west-2']] );
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 
 // Stack Parameters
 
@@ -20,7 +17,6 @@ var STORE_TRANSFORMED_IMAGES = 'true';
 // Parameters of S3 bucket where original images are stored
 var S3_IMAGE_BUCKET_NAME:string;
 // CloudFront parameters
-var CLOUDFRONT_ORIGIN_SHIELD_REGION = ORIGIN_SHIELD_MAPPING.get(process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || 'us-east-1');
 var CLOUDFRONT_CORS_ENABLED = 'true';
 // Parameters of transformed images
 var S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION = '90'; 
@@ -29,6 +25,10 @@ var S3_TRANSFORMED_IMAGE_CACHE_TTL = 'max-age=31622400';
 var LAMBDA_MEMORY = '1500';
 var LAMBDA_TIMEOUT = '60';
 var LOG_TIMING = 'false';
+
+var ZONE_NAME: string;
+var RECORD_NAME: string;
+var ZONE_ID: string;
 
 type ImageDeliveryCacheBehaviorConfig = {
   origin: any;
@@ -55,11 +55,15 @@ export class ImageOptimizationStack extends Stack {
     S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION') || S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION; 
     S3_TRANSFORMED_IMAGE_CACHE_TTL = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_CACHE_TTL') || S3_TRANSFORMED_IMAGE_CACHE_TTL;
     S3_IMAGE_BUCKET_NAME = this.node.tryGetContext('S3_IMAGE_BUCKET_NAME') || S3_IMAGE_BUCKET_NAME;
-    CLOUDFRONT_ORIGIN_SHIELD_REGION = this.node.tryGetContext('CLOUDFRONT_ORIGIN_SHIELD_REGION') || CLOUDFRONT_ORIGIN_SHIELD_REGION;
     CLOUDFRONT_CORS_ENABLED = this.node.tryGetContext('CLOUDFRONT_CORS_ENABLED') || CLOUDFRONT_CORS_ENABLED;
     LAMBDA_MEMORY = this.node.tryGetContext('LAMBDA_MEMORY') || LAMBDA_MEMORY;
     LAMBDA_TIMEOUT = this.node.tryGetContext('LAMBDA_TIMEOUT') || LAMBDA_TIMEOUT;
     LOG_TIMING = this.node.tryGetContext('LOG_TIMING') || LOG_TIMING;
+    RECORD_NAME = this.node.tryGetContext('RECORD_NAME') || RECORD_NAME;
+    ZONE_NAME = this.node.tryGetContext('ZONE_NAME') || ZONE_NAME;
+    ZONE_ID = this.node.tryGetContext('ZONE_ID') || ZONE_ID;
+
+    const domainName = `${RECORD_NAME}.${ZONE_NAME}`;
 
     // Create secret key to be used between CloudFront and Lambda URL for access control
     const SECRET_KEY = createHash('md5').update(this.node.addr).digest('hex') ;
@@ -123,11 +127,11 @@ export class ImageOptimizationStack extends Stack {
       transformedImageBucket = new s3.Bucket(this, 's3-transformed-image-bucket', {
         removalPolicy: RemovalPolicy.DESTROY,
         autoDeleteObjects: true, 
-        lifecycleRules: [
-            {
-              expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
-            },
-          ],
+        //lifecycleRules: [
+        //    {
+        //      expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
+        //    },
+        //  ],
       });
     }
 
@@ -152,8 +156,8 @@ export class ImageOptimizationStack extends Stack {
     // Create Lambda for image processing
     var lambdaProps = {
       runtime: lambda.Runtime.NODEJS_16_X, 
-      handler: 'index.handler',
       code: lambda.Code.fromAsset('functions/image-processing'),
+      handler: 'index.handler',
       timeout: Duration.seconds(parseInt(LAMBDA_TIMEOUT)),
       memorySize: parseInt(LAMBDA_MEMORY),
       environment: lambdaEnv,
@@ -176,11 +180,8 @@ export class ImageOptimizationStack extends Stack {
 
     if (transformedImageBucket) {
       imageOrigin = new origins.OriginGroup ({
-        primaryOrigin: new origins.S3Origin(transformedImageBucket, {
-          originShieldRegion: CLOUDFRONT_ORIGIN_SHIELD_REGION,
-        }),
+        primaryOrigin: new origins.S3Origin(transformedImageBucket, { }),
         fallbackOrigin: new origins.HttpOrigin(imageProcessingHelper.hostname, {
-          originShieldRegion: CLOUDFRONT_ORIGIN_SHIELD_REGION,
           customHeaders: {
             'x-origin-secret-header': SECRET_KEY,
           },
@@ -197,7 +198,6 @@ export class ImageOptimizationStack extends Stack {
     } else {
       console.log("else transformedImageBucket");
       imageOrigin = new origins.HttpOrigin(imageProcessingHelper.hostname, {
-        originShieldRegion: CLOUDFRONT_ORIGIN_SHIELD_REGION,
         customHeaders: {
           'x-origin-secret-header': SECRET_KEY,
         },
@@ -223,7 +223,7 @@ export class ImageOptimizationStack extends Stack {
       cachePolicy: new cloudfront.CachePolicy(this, `ImageCachePolicy${this.node.addr}`, {
         defaultTtl: Duration.hours(24),
         maxTtl: Duration.days(365),
-        minTtl: Duration.seconds(0),
+        minTtl: Duration.seconds(30),
         queryStringBehavior: cloudfront.CacheQueryStringBehavior.all()
       }),
       functionAssociations: [{
@@ -254,9 +254,26 @@ export class ImageOptimizationStack extends Stack {
       });  
       imageDeliveryCacheBehaviorConfig.responseHeadersPolicy = imageResponseHeadersPolicy;
     }
+
+    const certificateUsEastArn = StringParameter.fromStringParameterName(this, 'certificateUsEastArn', '/idn/popbela/certificateUsEastArn').stringValue;
+    const certificateUsEast = Certificate.fromCertificateArn(this, "certificateUsEast", certificateUsEastArn);
+
     const imageDelivery = new cloudfront.Distribution(this, 'imageDeliveryDistribution', {
       comment: 'image optimization - image delivery',
-      defaultBehavior: imageDeliveryCacheBehaviorConfig
+      defaultBehavior: imageDeliveryCacheBehaviorConfig,
+      domainNames: [domainName],
+      certificate: certificateUsEast,
+    });
+
+    const hostedZone = HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+      hostedZoneId: ZONE_ID,
+      zoneName: ZONE_NAME,
+    });
+
+    new ARecord(this, 'AliasRecord', {
+      recordName: RECORD_NAME,
+      zone: hostedZone,
+      target: RecordTarget.fromAlias(new CloudFrontTarget(imageDelivery)),
     });
 
     new CfnOutput(this, 'ImageDeliveryDomain', {
