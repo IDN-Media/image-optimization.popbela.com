@@ -26,6 +26,9 @@ npm install
 cdk bootstrap
 npm run build
 cdk deploy
+
+# for sotogubeng:
+cdk deploy --context RECORD_NAME=image --context ZONE_NAME=sotogubeng.com --context ZONE_ID=Z05940171Z8WQNZ6S7GPP --context S3_IMAGE_BUCKET_NAME=image-sotogubeng-com --all --require-approval never
 ```
 
 When the deployment is completed within minutes, the CDK output will include the domain name of the CloudFront distribution created for image optimization (ImageDeliveryDomain =YOURDISTRIBUTION.cloudfront.net). The stack will include an S3 bucket with sample images (OriginalImagesS3Bucket = YourS3BucketWithOriginalImagesGeneratedName). To verify that it is working properly, test the following optimized image URL https:// YOURDISTRIBUTION.cloudfront.net/images/rio/1.jpeg?format=auto&width=300.
