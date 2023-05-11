@@ -46,7 +46,6 @@ jobs:
     -
       name: Deploy with CDK
       run: |-
-        cd .cdk
         npm ci
         npm run build
         npm run cdk synth
