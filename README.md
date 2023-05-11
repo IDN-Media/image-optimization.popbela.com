@@ -28,7 +28,7 @@ npm run build
 cdk deploy
 
 # for sotogubeng:
-cdk deploy --context RECORD_NAME=image --context ZONE_NAME=sotogubeng.com --context ZONE_ID=Z05940171Z8WQNZ6S7GPP --context S3_IMAGE_BUCKET_NAME=image-sotogubeng-com --all --require-approval never
+cdk deploy --context RECORD_NAME=image --context ZONE_NAME=sotogubeng.com --context ZONE_ID=Z0038615LKFBRBB1OMPT --context S3_IMAGE_BUCKET_NAME=image-sotogubeng-com --all --require-approval never
 # where [RECORD_NAME].[ZONE_NAME] is the custom domain for the cloudfront distribution. This will also add RECORD_NAME record to hosted zone in Route 53.
 ```
 
