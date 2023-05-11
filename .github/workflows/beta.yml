@@ -48,7 +48,6 @@ jobs:
       run: |-
         npm ci
         npm run build
-        npm run cdk synth
         npm run cdk deploy \
           --context RECORD_NAME=image \
           --context ZONE_NAME=sotogubeng.com \
