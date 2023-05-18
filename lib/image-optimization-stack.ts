@@ -149,6 +149,16 @@ export class ImageOptimizationStack extends Stack {
       actions: ['s3:GetObject'],
       resources: ['arn:aws:s3:::'+originalImageBucket.bucketName+'/*'],
     });
+    
+    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
+      this, 'CloudFrontOriginAccessIdentity'
+    );
+    originalImageBucket.addToResourcePolicy(new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: ['arn:aws:s3:::'+originalImageBucket.bucketName+'/*'],
+        principals: [new iam.CanonicalUserPrincipal(
+            cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId)],
+    }));
 
     // statements of the IAM policy to attach to Lambda
     var iamPolicyStatements = [s3ReadOriginalImagesPolicy];
@@ -217,15 +227,17 @@ export class ImageOptimizationStack extends Stack {
       functionName: `urlRewriteFunction${this.node.addr}`, 
     });
 
+    const cachePolicy = new cloudfront.CachePolicy(this, `ImageCachePolicy${this.node.addr}`, {
+      defaultTtl: Duration.hours(24),
+      maxTtl: Duration.days(365),
+      minTtl: Duration.seconds(30),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all()
+    });
+
     var imageDeliveryCacheBehaviorConfig:ImageDeliveryCacheBehaviorConfig  = {
       origin: imageOrigin,
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      cachePolicy: new cloudfront.CachePolicy(this, `ImageCachePolicy${this.node.addr}`, {
-        defaultTtl: Duration.hours(24),
-        maxTtl: Duration.days(365),
-        minTtl: Duration.seconds(30),
-        queryStringBehavior: cloudfront.CacheQueryStringBehavior.all()
-      }),
+      cachePolicy,
       functionAssociations: [{
         eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
         function: urlRewriteFunction,
@@ -261,6 +273,16 @@ export class ImageOptimizationStack extends Stack {
     const imageDelivery = new cloudfront.Distribution(this, 'imageDeliveryDistribution', {
       comment: 'image optimization - image delivery',
       defaultBehavior: imageDeliveryCacheBehaviorConfig,
+      additionalBehaviors: {
+        "/*/*/*.svg":{
+          origin: new origins.S3Origin(originalImageBucket, {
+            originAccessIdentity: cloudfrontOAI
+          }),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy,
+        }
+      },
       domainNames: [domainName],
       certificate: certificateUsEast,
     });
