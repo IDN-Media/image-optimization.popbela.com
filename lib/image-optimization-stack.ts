@@ -300,7 +300,7 @@ export class ImageOptimizationStack extends Stack {
     });
 
     // alias for domain cdn.popbela.com
-    new ARecord(this, 'AliasRecord', {
+    new ARecord(this, 'CdnAliasRecord', {
       recordName: 'cdn',
       zone: hostedZone,
       target: RecordTarget.fromAlias(new CloudFrontTarget(imageDelivery)),
