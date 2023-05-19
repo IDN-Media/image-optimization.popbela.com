@@ -283,7 +283,8 @@ export class ImageOptimizationStack extends Stack {
           cachePolicy,
         }
       },
-      domainNames: [domainName],
+      // alternate domain image.popbela.com and cdn.popbela.com
+      domainNames: [domainName,`cdn.${ZONE_NAME}`],
       certificate: certificateUsEast,
     });
 
@@ -294,6 +295,13 @@ export class ImageOptimizationStack extends Stack {
 
     new ARecord(this, 'AliasRecord', {
       recordName: RECORD_NAME,
+      zone: hostedZone,
+      target: RecordTarget.fromAlias(new CloudFrontTarget(imageDelivery)),
+    });
+
+    // alias for domain cdn.popbela.com
+    new ARecord(this, 'AliasRecord', {
+      recordName: 'cdn',
       zone: hostedZone,
       target: RecordTarget.fromAlias(new CloudFrontTarget(imageDelivery)),
     });
