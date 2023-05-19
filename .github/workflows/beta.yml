@@ -48,7 +48,7 @@ jobs:
       run: |-
         npm ci
         npm run build
-        npm run cdk deploy \
+        npx cdk deploy \
           --context RECORD_NAME=image \
           --context ZONE_NAME=sotogubeng.com \
           --context ZONE_ID=Z0038615LKFBRBB1OMPT \
