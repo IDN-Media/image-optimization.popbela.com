@@ -24,6 +24,13 @@ exports.handler = async (event) => {
     // get the original image path images/rio/1.jpg
     imagePathArray.shift(); 
     var originalImagePath = imagePathArray.join('/');
+    // response 200 when accessing root url
+    if (originalImagePath.length == 0) {
+        return {
+            statusCode: 200,
+            body: 'Hello',
+        };
+    }
     // timing variable
     var timingLog = "perf ";
     var startTime = performance.now();
