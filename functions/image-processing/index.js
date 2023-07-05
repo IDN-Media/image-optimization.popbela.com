@@ -14,16 +14,25 @@ const LOG_TIMING = process.env.logTiming;
 
 exports.handler = async (event) => {
     // First validate if the request is coming from CloudFront
-    if (!event.headers['x-origin-secret-header'] || !(event.headers['x-origin-secret-header'] === SECRET_KEY)) return sendError(403, 'Request unauthorized', event);
+    // if (!event.headers['x-origin-secret-header'] || !(event.headers['x-origin-secret-header'] === SECRET_KEY)) return sendError(403, 'Request unauthorized', event);
     // Validate if this is a GET request
-    if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Only GET method is supported', event);
+    // if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Only GET method is supported', event);
     // An example of expected path is /rio/images/1.jpg/format=auto,width=100 or /rio/images/1.jpg/original where /rio/images/1.jpg is the path of the original image
     var imagePathArray= event.requestContext.http.path.split('/');
+
     // get the requested image operations
     var operationsPrefix = imagePathArray.pop(); 
     // get the original image path images/rio/1.jpg
     imagePathArray.shift(); 
     var originalImagePath = imagePathArray.join('/');
+
+   // response ok when accessing root url
+    if (originalImagePath.length == 0) {
+        return {
+            statusCode: 200,
+            body: 'OK',
+        };
+    }
     // timing variable
     var timingLog = "perf ";
     var startTime = performance.now();
