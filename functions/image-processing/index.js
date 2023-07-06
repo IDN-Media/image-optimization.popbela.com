@@ -28,7 +28,9 @@ exports.handler = async (event) => {
     if (originalImagePath.length == 0) {
         return {
             statusCode: 200,
-            body: 'Hello',
+            body: JSON.stringify({
+                "status": "OK"
+            }),
         };
     }
     // timing variable
