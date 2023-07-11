@@ -26,11 +26,13 @@ exports.handler = async (event) => {
     imagePathArray.shift(); 
     var originalImagePath = imagePathArray.join('/');
 
-   // response ok when accessing root url
+    // response 200 when accessing root url
     if (originalImagePath.length == 0) {
         return {
             statusCode: 200,
-            body: 'OK',
+            body: JSON.stringify({
+                "status": "OK"
+            }),
         };
     }
     // timing variable
