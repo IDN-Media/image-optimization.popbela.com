@@ -110,7 +110,7 @@ Resources:
         Fn::GetAtt:
           - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
           - Arn
-      Runtime: nodejs16.x
+      Runtime: nodejs12.x
       Description:
         Fn::Join:
           - ""
@@ -154,7 +154,7 @@ Resources:
       Code:
         S3Bucket:
           Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
-        S3Key: eb47deaedda7b18ca6add978cf67563728cab013b59310ce3b3c715f0490e09c.zip
+        S3Key: 9a3a0d9fd07e110c77074001e52dd3325435ce79301c0438c6f887f4f3ed5924.zip
       Role:
         Fn::GetAtt:
           - imageoptimizationServiceRoleB17BF31F
@@ -164,9 +164,13 @@ Resources:
           originalImageBucketName: image-sotogubeng-com
           transformedImageCacheTTL: max-age=31622400
           secretKey: dde47533b2b2ca349a679ec407902134
+          AWS_ACCESS_KEY_ID: AKIAXCZVFSQ7Y7RWNHPY
+          AWS_SECRET_ACCESS_KEY: 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
+          S3_IMAGE_BUCKET_NAME: image-sotogubeng-com
+          AWS_DEFAULT_REGION: ap-southeast-1
           logTiming: "false"
           transformedImageBucketName:
-            Ref: s3transformedimagebucket6D81D5CB
+            Ref: imgtransformationstack-s3transformedimagebucket6d-b46qeqougrq2
       Handler: index.handler
       MemorySize: 1500
       Runtime: nodejs16.x
@@ -253,7 +257,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs14.x
       Code:
         S3Bucket:
           Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
@@ -330,7 +334,7 @@ Resources:
               - SingletonLambdaf7d4f7304ee111e89c2dfa7ae01bbebc492C6E5C
               - Arn
       Handler: framework.onEvent
-      Runtime: nodejs16.x
+      Runtime: nodejs12.x
       Timeout: 900
     DependsOn:
       - customResourceMyProviderframeworkonEventServiceRoleDefaultPolicyB8BF2474
@@ -707,24 +711,6 @@ Resources:
       HostedZoneId: Z0038615LKFBRBB1OMPT
     Metadata:
       aws:cdk:path: ImgTransformationStack/AliasRecord/Resource
-  CdnAliasRecord144192E1:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      Name: cdn.sotogubeng.com.
-      Type: A
-      AliasTarget:
-        DNSName:
-          Fn::GetAtt:
-            - imageDeliveryDistribution8CA0B45D
-            - DomainName
-        HostedZoneId:
-          Fn::FindInMap:
-            - AWSCloudFrontPartitionHostedZoneIdMap
-            - Ref: AWS::Partition
-            - zoneId
-      HostedZoneId: Z0038615LKFBRBB1OMPT
-    Metadata:
-      aws:cdk:path: ImgTransformationStack/CdnAliasRecord/Resource
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
