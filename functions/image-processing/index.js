@@ -5,16 +5,14 @@ const AWS = require('aws-sdk');
 const https = require('https');
 const Sharp = require('sharp');
 
-const AWS_DEFAULT_REGION = process.env.AWS_DEFAULT_REGION;
 const S3 = new AWS.S3({
     signatureVersion: 'v4',
     httpOptions: {
         agent: new https.Agent({
             keepAlive: true
         })
-    },
-    region: AWS_DEFAULT_REGION
-    }); 
+    }
+}); 
 const S3_ORIGINAL_IMAGE_BUCKET = process.env.originalImageBucketName; 
 const S3_TRANSFORMED_IMAGE_BUCKET = process.env.transformedImageBucketName; 
 const TRANSFORMED_IMAGE_CACHE_TTL = process.env.transformedImageCacheTTL;
@@ -54,6 +52,9 @@ exports.handler = async (event) => {
         originalImage = await S3.getObject({ Bucket: S3_ORIGINAL_IMAGE_BUCKET, Key: originalImagePath }).promise();
         contentType = originalImage.ContentType;
     } catch (error) {
+        if(error.toString().includes('key does not exist')){
+            return sendError(404, {'status' : 'Not found'}, error);
+        }
         return sendError(500, 'error downloading original image', error);
     }
     let sharpObject = Sharp(originalImage.Body);
@@ -133,6 +134,8 @@ function sendError(code, message, error){
     console.log(error);
     return {
         statusCode: code,
-        body: message,
+        body: JSON.stringify({
+            message
+        }),
     };
 }

@@ -167,7 +167,7 @@ Resources:
           AWS_ACCESS_KEY_ID: AKIAXCZVFSQ7Y7RWNHPY
           AWS_SECRET_ACCESS_KEY: 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
           S3_IMAGE_BUCKET_NAME: image-sotogubeng-com
-          AWS_DEFAULT_REGION: ap-southeast-1
+          AWS_REGION: ap-southeast-1
           logTiming: "false"
           transformedImageBucketName:
             Ref: imgtransformationstack-s3transformedimagebucket6d-b46qeqougrq2
