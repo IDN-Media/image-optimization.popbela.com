@@ -43,7 +43,7 @@ exports.handler = async (event) => {
         originalImage = await S3.getObject({ Bucket: S3_ORIGINAL_IMAGE_BUCKET, Key: originalImagePath }).promise();
         contentType = originalImage.ContentType;
     } catch (error) {
-        return sendError(404, {'status' : 'Not found'}, error);
+        return sendError(404, 'Not Found', error);
     }
     let sharpObject = Sharp(originalImage.Body);
     let transformedImage;
@@ -123,7 +123,7 @@ function sendError(code, message, error){
     return {
         statusCode: code,
         body: JSON.stringify({
-            message
+            'message' : message
         }),
     };
 }
