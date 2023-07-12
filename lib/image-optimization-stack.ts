@@ -300,12 +300,11 @@ export class ImageOptimizationStack extends Stack {
     });
 
     // alias for domain cdn.popbela.com
-    // note di production cname manual
-    //new ARecord(this, 'CdnAliasRecord', {
-    //  recordName: 'cdn',
-    //  zone: hostedZone,
-    //  target: RecordTarget.fromAlias(new CloudFrontTarget(imageDelivery)),
-   // });
+    new ARecord(this, 'CdnAliasRecord', {
+      recordName: 'cdn',
+      zone: hostedZone,
+      target: RecordTarget.fromAlias(new CloudFrontTarget(imageDelivery)),
+    });
 
     new CfnOutput(this, 'ImageDeliveryDomain', {
       description: 'Domain name of image delivery',
