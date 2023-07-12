@@ -43,10 +43,7 @@ exports.handler = async (event) => {
         originalImage = await S3.getObject({ Bucket: S3_ORIGINAL_IMAGE_BUCKET, Key: originalImagePath }).promise();
         contentType = originalImage.ContentType;
     } catch (error) {
-        if(error.toString().includes('key does not exist')){
-            return sendError(404, {'status' : 'Not found'}, error);
-        }
-        return sendError(500, 'error downloading original image', error);
+        return sendError(404, {'status' : 'Not found'}, error);
     }
     let sharpObject = Sharp(originalImage.Body);
     let transformedImage;
