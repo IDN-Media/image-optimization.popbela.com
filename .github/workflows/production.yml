@@ -53,4 +53,5 @@ jobs:
           --context ZONE_NAME=popbela.com \
           --context ZONE_ID=Z04512592XKZQNHPIKVRT \
           --context S3_IMAGE_BUCKET_NAME=image-popbela-com \
+          --context ENV=Production \
           --all --require-approval never
