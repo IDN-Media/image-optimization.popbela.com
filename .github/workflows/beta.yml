@@ -53,4 +53,5 @@ jobs:
           --context ZONE_NAME=sotogubeng.com \
           --context ZONE_ID=Z0038615LKFBRBB1OMPT \
           --context S3_IMAGE_BUCKET_NAME=image-sotogubeng-com \
+          --context ENV=Staging \
           --all --require-approval never
